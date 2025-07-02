@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Editar Produto - STOC{% endblock %}
+{% block content %}
+<div class="main-card" style="max-width:400px;margin:auto;">
+    <h1 style="color:#ff6b35;">Editar Produto</h1>
+    <form method="post">
+        <label>Nome</label>
+        <input type="text" name="nome" value="{{ produto.nome }}" required>
+        <label>Preço</label>
+        <input type="number" name="preco" step="0.01" value="{{ produto.preco }}" required>
+        <label style="display:flex;align-items:center;justify-content:space-between;">Categoria
+        </label>
+        <select name="categoria_id" required>
+            {% for c in categorias %}
+            <option value="{{ c.id }}" {% if c.id == produto.categoria_id %}selected{% endif %}>{{ c.nome }}</option>
+            {% endfor %}
+        </select>
+        <label>Tipo</label>
+        <select name="tipo" required>
+            <option value="comida" {% if produto.tipo == 'comida' %}selected{% endif %}>🍽️ Comida</option>
+            <option value="bebida" {% if produto.tipo == 'bebida' %}selected{% endif %}>🥤 Bebida</option>
+            <option value="sobremesa" {% if produto.tipo == 'sobremesa' %}selected{% endif %}>🍰 Sobremesa</option>
+            <option value="outros" {% if produto.tipo == 'outros' %}selected{% endif %}>🔸 Outros</option>
+        </select>
+        <button type="submit" style="margin-top:18px;width:100%;">Salvar Alterações</button>
+    </form>
+    <a href="/produtos" class="btn-paginacao" style="display:block;text-align:center;margin-top:18px;">Voltar para lista</a>
+</div>
+{% endblock %}

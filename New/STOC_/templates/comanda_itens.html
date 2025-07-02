@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Visualização da Comanda - STOC{% endblock %}
+{% block content %}
+<div style="max-width:900px;margin:40px auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.08);padding:40px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
+        <div>
+            <h1 style="color:#ff6b35;margin:0;">📋 Comanda #{{ comanda.id }}</h1>
+            <p style="color:#666;margin:8px 0 0 0;">Visualização dos itens da comanda</p>
+        </div>
+        <div class="status-badge status-{{ comanda.status }}">
+            {% if comanda.status == 'aberta' %}
+                🔵 Aberta
+            {% elif comanda.status == 'fechada' %}
+                🟢 Fechada
+            {% else %}
+                ⚪ {{ comanda.status|title }}
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="comanda-info" style="background:#f8f9fa;padding:20px;border-radius:12px;margin-bottom:24px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+            <div>
+                <span style="color:#666;font-weight:600;font-size:0.9rem;">🪑 Mesa</span>
+                <div style="color:#333;font-weight:500;">Mesa {{ comanda.mesa_numero or comanda.mesa_id }}</div>
+            </div>
+            <div>
+                <span style="color:#666;font-weight:600;font-size:0.9rem;">👤 Garçom</span>
+                <div style="color:#333;font-weight:500;">{{ comanda.garcom_nome or ('ID: ' + comanda.garcom_id|string) }}</div>
+            </div>
+            <div>
+                <span style="color:#666;font-weight:600;font-size:0.9rem;">💰 Total</span>
+                <div style="color:#28a745;font-weight:700;font-size:1.2rem;">R$ {{ '%.2f'|format(comanda.total or 0) }}</div>
+            </div>
+        </div>
+    </div>
+    
+    {% if itens|length == 0 %}
+    <div style="text-align:center;padding:40px;color:#666;">
+        <div style="font-size:3rem;margin-bottom:16px;">🍽️</div>
+        <h3>Nenhum item nesta comanda</h3>
+        <p>Esta comanda não possui itens registrados.</p>
+    </div>
+    {% else %}
+    <table style="width:100%;border-collapse:collapse;margin-top:24px;background:white;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <thead>
+            <tr style="background:#ff6b35;color:white;">
+                <th style="padding:16px;text-align:left;">Produto</th>
+                <th style="padding:16px;text-align:center;">Quantidade</th>
+                <th style="padding:16px;text-align:right;">Preço Unitário</th>
+                <th style="padding:16px;text-align:right;">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in itens %}
+            <tr style="border-bottom:1px solid #e9ecef;">
+                <td style="padding:16px;">{{ item.produto_nome or ('ID: ' + item.produto_id|string) }}</td>
+                <td style="padding:16px;text-align:center;">{{ item.quantidade }}</td>
+                <td style="padding:16px;text-align:right;">R$ {{ '%.2f'|format(item.preco_unitario) }}</td>
+                <td style="padding:16px;text-align:right;font-weight:600;">R$ {{ '%.2f'|format(item.quantidade * item.preco_unitario) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    
+    <!-- Formulário para adicionar item -->
+    {% if comanda.status == 'aberta' %}
+    <form method="post" action="/comandas/{{ comanda.id }}" style="margin-bottom:32px;display:flex;gap:16px;align-items:flex-end;">
+        <div>
+            <label for="produto_id" style="font-weight:600;">Produto:</label><br>
+            <select name="produto_id" id="produto_id" required style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;min-width:180px;">
+                <option value="">Selecione...</option>
+                {% for produto in produtos %}
+                <option value="{{ produto.id }}">{{ produto.nome }} (R$ {{ '%.2f'|format(produto.preco) }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="quantidade" style="font-weight:600;">Quantidade:</label><br>
+            <input type="number" name="quantidade" id="quantidade" min="1" value="1" required style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;width:80px;">
+        </div>
+        <button type="submit" style="background:#ff6b35;color:white;padding:10px 24px;border:none;border-radius:6px;font-weight:600;cursor:pointer;">Adicionar Item</button>
+    </form>
+    {% endif %}
+    
+    <div style="text-align:center;margin-top:32px;">
+        <a href="/comandas" style="background:#6c757d;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">
+            ← Voltar para Comandas
+        </a>
+    </div>
+</div>
+
+<style>
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-aberta {
+    background: #cce5ff;
+    color: #0056b3;
+}
+
+.status-fechada {
+    background: #d4edda;
+    color: #155724;
+}
+</style>
+{% endblock %}

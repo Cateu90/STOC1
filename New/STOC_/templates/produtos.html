@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Produtos - STOC{% endblock %}
+
+{% block content %}
+<div style="padding: 32px; max-width: 1200px; margin: 0 auto;">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 16px; margin-bottom: 30px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin: 0 0 8px; font-size: 2.5rem;">📦 Produtos</h1>
+                <p style="margin: 0; font-size: 1.1rem; opacity: 0.9;">Gerencie o cardápio do seu restaurante</p>
+            </div>
+            <a href="/produtos/novo" style="background: rgba(255,255,255,0.2); color: white; padding: 15px 30px; border-radius: 50px; text-decoration: none; font-weight: 600;">
+                ➕ Novo Produto
+            </a>
+        </div>
+    </div>
+
+    <!-- Feedback Visual -->
+    {% if success %}
+    <div style="background: #e8f5e8; color: #2e7d32; border: 1px solid #4caf50; border-radius: 8px; padding: 16px; margin-bottom: 24px; font-weight: 600; text-align: center;">
+        Produto cadastrado com sucesso!
+    </div>
+    {% endif %}
+    {% if deleted %}
+    <div style="background: #ffebee; color: #c62828; border: 1px solid #e57373; border-radius: 8px; padding: 16px; margin-bottom: 24px; font-weight: 600; text-align: center;">
+        Produto excluído com sucesso!
+    </div>
+    {% endif %}
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="font-size: 2.5rem; font-weight: 700; color: #667eea; margin-bottom: 8px;">
+                {{ produtos|length if produtos else 0 }}
+            </div>
+            <div style="color: #6c757d; font-size: 1rem;">Total de Produtos</div>
+        </div>
+        <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="font-size: 2.5rem; font-weight: 700; color: #28a745; margin-bottom: 8px;">
+                {% if produtos and produtos|length > 0 %}
+                    R$ {{ "%.2f"|format(produtos|sum(attribute='preco')/produtos|length) }}
+                {% else %}
+                    R$ 0.00
+                {% endif %}
+            </div>
+            <div style="color: #6c757d; font-size: 1rem;">Preço Médio</div>
+        </div>
+        <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="font-size: 2.5rem; font-weight: 700; color: #ff6b35; margin-bottom: 8px;">
+                {% if produtos %}
+                    R$ {{ "%.2f"|format(produtos|sum(attribute='preco')) }}
+                {% else %}
+                    R$ 0.00
+                {% endif %}
+            </div>
+            <div style="color: #6c757d; font-size: 1rem;">Valor Total</div>
+        </div>
+    </div>
+
+    <!-- Busca e Filtros -->
+    <div style="margin-bottom: 25px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar produtos..." 
+               style="flex: 1; min-width: 300px; padding: 15px 20px; border: 2px solid #e9ecef; border-radius: 50px; font-size: 1rem; outline: none; transition: border-color 0.3s;"
+               onkeyup="filtrarProdutos()">
+        <div style="display: flex; gap: 10px;">
+            <button class="filter-btn active" onclick="filtrarCategoria('todos')" style="padding: 10px 20px; border: none; border-radius: 25px; background: #667eea; color: white; cursor: pointer; font-weight: 600;">Todos</button>
+            {% for categoria in categorias %}
+                {% if categoria.nome != 'PDV' %}
+                    <button class="filter-btn" onclick="filtrarCategoria('{{ categoria.id }}')" style="padding: 10px 20px; border: none; border-radius: 25px; background: #e9ecef; color: #6c757d; cursor: pointer; font-weight: 600;">{{ categoria.nome }}</button>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Grid de Produtos -->
+    <div id="produtosGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px;">
+        {% if produtos %}
+            {% for produto in produtos %}
+            <div class="produto-card" data-categoria="{{ produto.categoria_id or 'todos' }}" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 25px 15px;">
+                    <div style="font-size: 2rem; padding: 8px 12px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; color: white;">
+                        {% if produto.categoria_id == 1 %}🍽️
+                        {% elif produto.categoria_id == 2 %}🥤
+                        {% elif produto.categoria_id == 3 %}🍰
+                        {% else %}📦
+                        {% endif %}
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="editarProduto({{ produto.id }})" 
+                                style="padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; background: #007bff; color: white; transition: all 0.3s;"
+                                onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+                            ✏️
+                        </button>
+                        <button onclick="confirmarExclusao({{ produto.id }})" 
+                                style="padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; background: #dc3545; color: white; transition: all 0.3s;"
+                                onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+                <div style="padding: 0 25px 20px;">
+                    <h3 class="produto-nome" style="font-size: 1.4rem; font-weight: 700; color: #333; margin: 0 0 8px;">{{ produto.nome }}</h3>
+                    <p style="color: #6c757d; font-size: 0.95rem; margin: 0 0 15px;">
+                        {{ produto.tipo or 'Produto' }}
+                        {% if produto.categoria_nome %} - {{ produto.categoria_nome }}{% endif %}
+                    </p>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #ff6b35;">R$ {{ "%.2f"|format(produto.preco) }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 80px 20px; grid-column: 1 / -1;">
+                <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.3;">📦</div>
+                <h3 style="color: #6c757d; margin-bottom: 20px;">Nenhum produto encontrado</h3>
+                <a href="/produtos/novo" style="background: #007bff; color: white; padding: 15px 30px; border-radius: 50px; text-decoration: none; font-weight: 600;">
+                    ➕ Adicionar Primeiro Produto
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div id="modalConfirmacao" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; margin: 20px;">
+        <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
+        <h3 style="margin-bottom: 15px; color: #333;">Confirmar Exclusão</h3>
+        <p style="color: #6c757d; margin-bottom: 30px;">Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.</p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button onclick="fecharModal()" style="padding: 12px 24px; border: 2px solid #6c757d; background: white; color: #6c757d; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                Cancelar
+            </button>
+            <button onclick="excluirProdutoConfirmado()" style="padding: 12px 24px; border: none; background: #dc3545; color: white; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                Excluir
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let produtoParaExcluir = null;
+
+function confirmarExclusao(produtoId) {
+    produtoParaExcluir = produtoId;
+    const modal = document.getElementById('modalConfirmacao');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function fecharModal() {
+    const modal = document.getElementById('modalConfirmacao');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    produtoParaExcluir = null;
+}
+
+function excluirProdutoConfirmado() {
+    if (produtoParaExcluir) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/produtos/' + produtoParaExcluir + '/excluir';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function editarProduto(produtoId) {
+    window.location.href = '/produtos/' + produtoId + '/editar';
+}
+
+function filtrarProdutos() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toUpperCase();
+    const cards = document.querySelectorAll('.produto-card');
+    
+    cards.forEach(card => {
+        const nome = card.querySelector('.produto-nome').textContent;
+        if (nome.toUpperCase().indexOf(filter) > -1) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function filtrarCategoria(categoria) {
+    const cards = document.querySelectorAll('.produto-card');
+    const buttons = document.querySelectorAll('.filter-btn');
+    
+    // Atualizar botões
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = '#e9ecef';
+        btn.style.color = '#6c757d';
+    });
+    
+    event.target.classList.add('active');
+    event.target.style.background = '#667eea';
+    event.target.style.color = 'white';
+    
+    // Filtrar cards
+    cards.forEach(card => {
+        const cardCategoria = card.getAttribute('data-categoria');
+        if (categoria === 'todos' || cardCategoria === categoria) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Fechar modal ao clicar fora dele
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('modalConfirmacao');
+    if (event.target === modal) {
+        fecharModal();
+    }
+});
+
+// Fechar modal com ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        fecharModal();
+    }
+});
+
+// Adicionar efeito hover aos cards
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.produto-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+        });
+    });
+});
+</script>
+{% endblock %}

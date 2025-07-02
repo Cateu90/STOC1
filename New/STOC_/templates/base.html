@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}STOC{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(135deg, #ff7f50 0%, #ff6b35 100%);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+            min-height: 100vh;
+        }
+        .user-section {
+            padding: 24px 16px 16px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .user-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.18);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .nav-menu {
+            flex: 1;
+            padding: 24px 0;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 8px 0 0 8px;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+        }
+        .nav-item.active, .nav-item:hover {
+            background: rgba(255,255,255,0.18);
+            color: #ffe066;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .content-area {
+            padding: 0;
+            min-height: 100vh;
+        }
+        @media (max-width: 900px) {
+            .sidebar { width: 100px; }
+            .nav-item span { display: none; }
+            .user-section span { display: none; }
+        }
+    </style>
+</head>
+<body style="display:flex;min-height:100vh;">
+    <div class="sidebar">
+        <div class="user-section">
+            <div class="user-icon">👤</div>
+            <span>{{ user.name if user else 'Usuário' }}</span>
+        </div>
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item{% if active_page == 'dashboard' %} active{% endif %}"><span>🏠</span> <span>Dashboard</span></a>
+            <a href="/produtos" class="nav-item{% if active_page == 'produtos' %} active{% endif %}"><span>🍽️</span> <span>Produtos</span></a>
+            <a href="/mesas" class="nav-item{% if active_page == 'mesas' %} active{% endif %}"><span>🪑</span> <span>Mesas</span></a>
+            <a href="/categorias" class="nav-item{% if active_page == 'categorias' %} active{% endif %}"><span>📂</span> <span>Categorias</span></a>
+            <a href="/relatorios" class="nav-item{% if active_page == 'vendas' %} active{% endif %}"><span>📊</span> <span>Vendas</span></a>
+            <a href="/comandas" class="nav-item{% if active_page == 'comandas' %} active{% endif %}"><span>📝</span> <span>Comandas</span></a>
+            <a href="/usuarios" class="nav-item{% if active_page == 'usuarios' %} active{% endif %}"><span>👥</span> <span>Usuários</span></a>
+            <a href="/pdv" class="nav-item{% if active_page == 'pdv' %} active{% endif %}"><span>💵</span> <span>Caixa</span></a>
+            <a href="/impressoras" class="nav-item{% if active_page == 'impressoras' %} active{% endif %}"><span>🖨️</span> <span>Impressoras</span></a>
+        </nav>
+    </div>
+    <div class="main-content">
+        <div class="content-area" id="content-area">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('button[data-href]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      btn.style.backgroundColor = '#ffe066';
+      setTimeout(() => { btn.style.backgroundColor = ''; }, 300);
+      window.location.href = btn.getAttribute('data-href');
+    });
+  });
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

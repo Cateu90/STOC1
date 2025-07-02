@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Novo Garçom - STOC{% endblock %}
+{% block content %}
+<div class="main-card">
+    <h1 style="color:#ff6b35;">👨‍🍳 Novo Garçom</h1>
+    
+    <div style="background:#e8f5e8; border:1px solid #4caf50; border-radius:8px; padding:16px; margin:20px 0;">
+        <h3 style="color:#2e7d32; margin:0 0 8px 0;">ℹ️ Informação</h3>
+        <p style="margin:0; color:#2e7d32;">
+            Você está adicionando um novo garçom ao seu sistema. Garçons podem criar comandas, gerenciar pedidos e atender mesas.
+        </p>
+    </div>
+    
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    <form method="post">
+        <label>Nome do Garçom</label>
+        <input type="text" name="name" required placeholder="Ex: João Silva">
+        
+        <label>E-mail</label>
+        <input type="email" name="email" required placeholder="Ex: joao@restaurante.com">
+        
+        <label>Senha</label>
+        <input type="password" name="password" required placeholder="Mínimo 6 caracteres">
+        
+        <div style="margin: 20px 0; padding: 16px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">
+            <p style="margin: 0; color: #856404;">
+                <strong>🔐 Perfil:</strong> Este usuário será criado como <strong>Garçom</strong> e poderá usar o aplicativo móvel para gerenciar pedidos.
+            </p>
+        </div>
+        
+        <button type="submit">➕ Cadastrar Garçom</button>
+    </form>
+    
+    <button type="button" onclick="location.href='/usuarios'" class="voltar" style="display:block;margin-top:18px;text-align:center;color:#666;text-decoration:none;background:none;border:none;">
+        ← Voltar para lista de usuários
+    </button>
+</div>
+{% endblock %}

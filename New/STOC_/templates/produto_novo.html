@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Novo Produto - STOC{% endblock %}
+{% block content %}
+<div class="main-card" style="max-width:400px;margin:auto;">
+    <h1 style="color:#ff6b35;">Novo Produto</h1>
+    <form method="post">
+        <label>Nome</label>
+        <input type="text" name="nome" required>
+        <label>Preço</label>
+        <input type="number" name="preco" step="0.01" required>
+        <label style="display:flex;align-items:center;justify-content:space-between;">Categoria
+        </label>
+        <select name="categoria_id" required>
+            {% for c in categorias %}
+            <option value="{{ c.id }}">{{ c.nome }}</option>
+            {% endfor %}
+        </select>
+        <label>Tipo</label>
+        <select name="tipo" required>
+            <option value="comida">🍽️ Comida</option>
+            <option value="bebida">🥤 Bebida</option>
+            <option value="sobremesa">🍰 Sobremesa</option>
+            <option value="outros">🔸 Outros</option>
+        </select>
+        <button type="submit" style="margin-top:18px;width:100%;">Salvar</button>
+    </form>
+    <a href="/produtos" class="btn-paginacao" style="display:block;text-align:center;margin-top:18px;">Voltar para lista</a>
+</div>
+{% endblock %}

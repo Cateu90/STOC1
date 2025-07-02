@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Nova Comanda - STOC{% endblock %}
+{% block content %}
+<div class="main-card">
+    <h1 style="color:#ff6b35;">Nova Comanda</h1>
+    <form method="post">
+        <label style="display:block;margin-top:18px;font-weight:600;">Mesa</label>
+        <select name="mesa_id" required style="width:100%;padding:12px;border-radius:8px;border:1px solid #ddd;margin-top:6px;">
+            <option value="">Selecione</option>
+            {% for m in mesas %}
+            <option value="{{ m.id }}">{{ m.nome }}</option>
+            {% endfor %}
+        </select>
+        <label style="display:block;margin-top:18px;font-weight:600;">Garçom</label>
+        <select name="garcom_id" required style="width:100%;padding:12px;border-radius:8px;border:1px solid #ddd;margin-top:6px;">
+            <option value="">Selecione</option>
+            {% for g in garcons %}
+            <option value="{{ g.id }}">{{ g.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" style="margin-top:24px;background:#ff6b35;color:#fff;border:none;padding:12px 0;width:100%;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">Abrir Comanda</button>
+    </form>
+    <a href="/comandas" class="voltar" style="display:block;margin-top:18px;text-align:center;color:#666;text-decoration:none;">Voltar para comandas</a>
+</div>
+{% endblock %}

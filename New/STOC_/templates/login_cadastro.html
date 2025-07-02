@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOC - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="50" cy="10" r="0.8" fill="rgba(255,255,255,0.02)"/><circle cx="90" cy="40" r="0.8" fill="rgba(255,255,255,0.02)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        }
+
+        .container {
+            display: flex;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+            overflow: hidden;
+            width: 900px;
+            max-width: 95vw;
+            min-height: 600px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #ff7f50 0%, #ff6b35 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-20px, -20px) rotate(180deg); }
+        }
+
+        .logo-container {
+            margin-bottom: 30px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .logo-icon {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+        }
+
+        .utensils {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .fork, .knife {
+            width: 5px;
+            height: 35px;
+            background: #ff6b35;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .fork::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -1px;
+            width: 1px;
+            height: 12px;
+            background: #ff6b35;
+            border-radius: 1px;
+        }
+
+        .fork::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -1px;
+            width: 1px;
+            height: 12px;
+            background: #ff6b35;
+            border-radius: 1px;
+        }
+
+        .knife::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 2px solid transparent;
+            border-right: 2px solid transparent;
+            border-bottom: 12px solid #ff6b35;
+        }
+
+        .welcome-text {
+            color: white;
+            z-index: 2;
+            position: relative;
+        }
+
+        .welcome-text h1 {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .welcome-text p {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.6;
+            max-width: 300px;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-container {
+            max-width: 350px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .form-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #ff6b35, #ff7f50);
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #ff6b35;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 25px;
+        }
+
+        .forgot-password a {
+            color: #ff6b35;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff6b35, #ff7f50);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e1e5e9;
+            z-index: 1;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .social-login {
+            display: flex;
+            gap: 10px;
+        }
+
+        .social-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .social-btn:hover {
+            border-color: #ff6b35;
+            transform: translateY(-1px);
+        }
+
+        .form-content {
+            display: none;
+        }
+
+        .form-content.active {
+            display: block;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+        }
+
+        .alert-success {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .alert-icon {
+            font-size: 16px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                width: 95vw;
+                min-height: auto;
+            }
+
+            .left-panel {
+                padding: 30px 20px;
+                min-height: 200px;
+            }
+
+            .welcome-text h1 {
+                font-size: 36px;
+            }
+
+            .right-panel {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <div class="utensils">
+                        <div class="fork"></div>
+                        <div class="knife"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="welcome-text">
+                <h1>STOC</h1>
+                <p>Sistema completo de gestão para restaurantes. Controle seu estoque, vendas e comandas de forma simples e eficiente.</p>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>Bem-vindo de volta</h2>
+                    <p>Entre na sua conta ou crie uma nova</p>
+                </div>
+
+                <!-- Mensagens de erro e sucesso -->
+                {% if error %}
+                <div class="alert alert-error">
+                    <span class="alert-icon">⚠️</span>
+                    {{ error }}
+                </div>
+                {% endif %}
+                {% if success %}
+                <div class="alert alert-success">
+                    <span class="alert-icon">✅</span>
+                    {{ success }}
+                </div>
+                {% endif %}
+
+                <div class="form-tabs">
+                    <button class="tab-button {% if not success %}active{% endif %}" onclick="showTab('login')">Entrar</button>
+                    <button class="tab-button {% if success %}active{% endif %}" onclick="showTab('register')">Cadastrar</button>
+                </div>
+
+                <!-- Login Form -->
+                <form class="form-content {% if not success %}active{% endif %}" id="login-form" method="post" action="/login">
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" name="password" placeholder="••••••••" required>
+                    </div>
+                    <div class="forgot-password">
+                        <a href="#">Esqueceu sua senha?</a>
+                    </div>
+                    <button type="submit" class="submit-btn">Entrar</button>
+                </form>
+
+                <!-- Register Form -->
+                <form class="form-content {% if success %}active{% endif %}" id="register-form" method="post" action="/register">
+                    <div class="form-group">
+                        <label for="reg-name">Nome completo</label>
+                        <input type="text" id="reg-name" name="name" placeholder="Seu nome completo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">E-mail</label>
+                        <input type="email" id="reg-email" name="email" placeholder="seu@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Senha</label>
+                        <input type="password" id="reg-password" name="password" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-confirm">Confirmar senha</label>
+                        <input type="password" id="reg-confirm" name="confirm" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Criar conta</button>
+                </form>
+
+                <div class="divider">
+                    <span>ou</span>
+                </div>
+
+                <div class="social-login">
+                    <button class="social-btn">
+                        <span>📧</span> Google
+                    </button>
+                    <button class="social-btn">
+                        <span>👤</span> Facebook
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Remove active class from all tabs and forms
+            document.querySelectorAll('.tab-button').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.form-content').forEach(form => form.classList.remove('active'));
+            
+            // Find and activate the correct tab button
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(tab => {
+                if ((tabName === 'login' && tab.textContent.includes('Entrar')) ||
+                    (tabName === 'register' && tab.textContent.includes('Cadastrar'))) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Show corresponding form
+            document.getElementById(tabName + '-form').classList.add('active');
+            // Update header text
+            const header = document.querySelector('.form-header h2');
+            const subtitle = document.querySelector('.form-header p');
+            if (tabName === 'login') {
+                header.textContent = 'Bem-vindo de volta';
+                subtitle.textContent = 'Entre na sua conta para continuar';
+            } else {
+                header.textContent = 'Criar nova conta';
+                subtitle.textContent = 'Preencha os dados para se cadastrar';
+            }
+        }
+
+        // Função para trocar para aba de login automaticamente após cadastro bem-sucedido
+        function switchToLoginAfterSuccess() {
+            const successAlert = document.querySelector('.alert-success');
+            if (successAlert && successAlert.textContent.includes('Agora você pode fazer login')) {
+                // Atualizar header para mostrar que está na aba de cadastro inicialmente
+                const header = document.querySelector('.form-header h2');
+                const subtitle = document.querySelector('.form-header p');
+                header.textContent = 'Conta criada com sucesso!';
+                subtitle.textContent = 'Aguarde, você será redirecionado para o login...';
+                
+                // Aguarda um pouco para o usuário ver a mensagem de sucesso
+                setTimeout(() => {
+                    showTab('login');
+                    // Focar no campo de email para facilitar o login
+                    const emailInput = document.getElementById('email');
+                    if (emailInput) {
+                        emailInput.focus();
+                    }
+                    
+                    // Adicionar uma transição suave
+                    const loginForm = document.getElementById('login-form');
+                    if (loginForm) {
+                        loginForm.style.animation = 'fadeIn 0.5s ease-in';
+                    }
+                }, 3000); // 3 segundos para ver a mensagem
+            }
+        }
+
+        // Social login buttons
+        document.querySelectorAll('.social-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const platform = this.textContent.trim();
+                alert('Login com ' + platform + ' será implementado em breve!');
+            });
+        });
+
+        // Add some interactive effects
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+                this.parentElement.style.transition = 'transform 0.3s ease';
+            });
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Executar quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            switchToLoginAfterSuccess();
+        });
+    </script>
+</body>
+</html>

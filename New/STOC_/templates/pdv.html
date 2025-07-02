@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+{% block title %}PDV - STOC{% endblock %}
+{% block content %}
+<div class="pdv-touch-wrapper">
+    <header class="pdv-touch-header">
+        <div class="pdv-touch-title">
+            <span class="pdv-touch-logo">🛒</span>
+            <span>Ponto de Venda</span>
+        </div>
+        <div class="pdv-touch-info">
+            <span class="pdv-touch-user">👤 {{ user.nome if user else 'Operador' }}</span>
+            <span class="pdv-touch-clock" id="pdv-touch-clock"></span>
+        </div>
+    </header>
+    <main class="pdv-touch-main">
+        <section class="pdv-touch-produtos">
+            <div class="pdv-touch-produtos-header">
+                <input id="busca-produto" type="text" placeholder="Buscar produto..." autocomplete="off">
+            </div>
+            <div class="pdv-touch-categorias-filtro">
+                <button class="filtro-categoria-btn active" data-id="all">Todos</button>
+                {% for c in categorias %}
+                {% if c.nome != 'PDV' %}
+                <button class="filtro-categoria-btn" data-id="{{ c.id }}">{{ c.nome }}</button>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <div id="produtos-grid" class="pdv-touch-produtos-grid">
+                {# Os produtos serão renderizados aqui pelo JavaScript #}
+            </div>
+            <div id="produtos-vazio" class="pdv-touch-empty" style="display:none;">
+                <div class="pdv-touch-empty-icon">📦</div>
+                Nenhum produto encontrado.
+            </div>
+        </section>
+        <aside class="pdv-touch-carrinho">
+            <div class="pdv-touch-carrinho-header">
+                <span class="pdv-touch-carrinho-title">🛍️ Carrinho</span>
+                <div class="form-group">
+                    <label for="numero-comanda">Nº Comanda:</label>
+                    <input id="numero-comanda" type="number" min="1" placeholder="Opcional">
+                </div>
+            </div>
+            
+            <div id="carrinho-vazio" class="pdv-touch-empty">
+                <div class="pdv-touch-empty-icon">🛍️</div>
+                Nenhum item no carrinho.
+            </div>
+            
+            <ul id="carrinho-lista" class="pdv-touch-carrinho-lista"></ul>
+
+            <div class="pdv-touch-carrinho-footer">
+                <div id="total-pdv" class="pdv-touch-total"></div>
+                <div class="form-group-pagamento">
+                    <label for="forma-pagamento">Forma de Pagamento:</label>
+                    <select id="forma-pagamento">
+                      <option value="">Selecione...</option>
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="cartao">Cartão</option>
+                      <option value="pix">Pix</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <button id="finalizar-pdv" class="pdv-touch-btn-finalizar" disabled><i class="icon">💳</i> Finalizar Venda</button>
+                <div id="pdv-feedback"></div>
+            </div>
+        </aside>
+    </main>
+</div>
+<script>
+// Relógio
+function atualizaRelogio() {
+    const el = document.getElementById('pdv-touch-clock');
+    if (!el) return;
+    const agora = new Date();
+    el.textContent = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+}
+setInterval(atualizaRelogio, 1000);
+atualizaRelogio();
+
+// Estado da aplicação
+let produtos = []; // Agora é 'let' e começa vazio
+const carrinho = [];
+let filtroTexto = "";
+let filtroCategoria = "all";
+let isLoading = false;
+
+// Elementos do DOM
+const gridProdutos = document.getElementById('produtos-grid');
+const divCarrinhoVazio = document.getElementById('carrinho-vazio');
+const listaCarrinho = document.getElementById('carrinho-lista');
+const divTotal = document.getElementById('total-pdv');
+const btnFinalizar = document.getElementById('finalizar-pdv');
+const inputBusca = document.getElementById('busca-produto');
+const divProdutosVazio = document.getElementById('produtos-vazio');
+const feedbackDiv = document.getElementById('pdv-feedback');
+const inputComanda = document.getElementById('numero-comanda');
+
+async function fetchAndRenderProdutos(categoriaId) {
+    if (isLoading) return;
+    isLoading = true;
+    filtroCategoria = categoriaId;
+    gridProdutos.innerHTML = '<div class="pdv-loading">Carregando produtos...</div>'; // Feedback de carregamento
+    divProdutosVazio.style.display = 'none';
+
+    try {
+        const response = await fetch(`/api/produtos/${categoriaId}`);
+        if (!response.ok) {
+            throw new Error('Falha ao buscar produtos');
+        }
+        produtos = await response.json();
+        renderProdutos();
+    } catch (error) {
+        console.error('Erro ao buscar produtos:', error);
+        gridProdutos.innerHTML = '<div class="pdv-error">Não foi possível carregar os produtos. Tente novamente.</div>';
+    } finally {
+        isLoading = false;
+    }
+}
+
+
+async function carregarComanda(comandaId) {
+    if (!comandaId || isNaN(comandaId) || comandaId <= 0) {
+        carrinho.length = 0;
+        renderCarrinho();
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/comandas/${comandaId}/itens`);
+        if (response.ok) {
+            const itens = await response.json();
+            carrinho.length = 0; // Limpa o carrinho atual
+            itens.forEach(item => {
+                carrinho.push({
+                    id: item.produto_id,
+                    nome: item.produto_nome,
+                    preco: item.produto_preco,
+                    qtd: item.quantidade
+                });
+            });
+            renderCarrinho();
+            feedbackDiv.className = 'success pdv-feedback-anim';
+            feedbackDiv.textContent = `Comanda ${comandaId} carregada.`;
+        } else {
+            const data = await response.json().catch(() => ({})); // Tenta pegar o JSON, senão objeto vazio
+            carrinho.length = 0;
+            renderCarrinho();
+            feedbackDiv.className = 'error pdv-feedback-anim';
+            feedbackDiv.textContent = data.error || 'Comanda não encontrada ou vazia.';
+        }
+    } catch (error) {
+        console.error('Erro ao carregar comanda:', error);
+        feedbackDiv.className = 'error pdv-feedback-anim';
+        feedbackDiv.textContent = 'Erro de conexão ao buscar comanda.';
+    }
+}
+
+function renderProdutos() {
+    gridProdutos.innerHTML = '';
+    let encontrados = 0;
+    const texto = filtroTexto.toLowerCase();
+    
+    // A lógica de filtro de categoria agora é feita na busca (fetch)
+    // O filtro de texto continua no cliente
+    const produtosFiltrados = produtos.filter(prod => 
+        !texto || prod.nome.toLowerCase().includes(texto)
+    );
+
+    produtosFiltrados.forEach(prod => {
+        const card = document.createElement('div');
+        card.className = 'pdv-touch-produto-card';
+        card.innerHTML = `
+            <div class='pdv-touch-produto-nome'>${prod.nome}</div>
+            <div class='pdv-touch-produto-preco'>R$ ${Number(prod.preco).toFixed(2)}</div>
+            <button type='button' data-id='${prod.id}' class='pdv-touch-btn-add'><i class='icon'>➕</i> Adicionar</button>
+        `;
+        card.querySelector('.pdv-touch-btn-add').onclick = () => adicionarAoCarrinho(prod.id);
+        gridProdutos.appendChild(card);
+        encontrados++;
+    });
+    divProdutosVazio.style.display = encontrados === 0 ? 'flex' : 'none';
+}
+
+function adicionarAoCarrinho(id) {
+    const prod = produtos.find(p => p.id === id);
+    if (!prod) return;
+    const existente = carrinho.find(i => i.id === id);
+    if (existente) existente.qtd++;
+    else carrinho.push({id: prod.id, nome: prod.nome, preco: prod.preco, qtd: 1});
+    renderCarrinho();
+}
+
+function renderCarrinho() {
+    listaCarrinho.innerHTML = '';
+    divCarrinhoVazio.style.display = carrinho.length === 0 ? 'flex' : 'none';
+    btnFinalizar.disabled = carrinho.length === 0;
+    
+    if (carrinho.length === 0) {
+        divTotal.innerHTML = '';
+        return;
+    }
+
+    let total = 0;
+    carrinho.forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.className = 'pdv-touch-carrinho-item';
+        li.innerHTML = `
+            <span class='pdv-touch-carrinho-nome'>${item.nome}</span>
+            <span class='pdv-touch-carrinho-qtd'>
+                <button class='pdv-touch-btn-qtd' data-idx="${idx}" data-delta="-1">-</button>
+                <span>${item.qtd}</span>
+                <button class='pdv-touch-btn-qtd' data-idx="${idx}" data-delta="1">+</button>
+            </span>
+            <span class='pdv-touch-carrinho-preco'>R$ ${(item.preco * item.qtd).toFixed(2)}</span>
+            <button class='pdv-touch-btn-remove' data-idx="${idx}"><i class='icon'>🗑️</i></button>
+        `;
+        listaCarrinho.appendChild(li);
+        total += item.preco * item.qtd;
+    });
+    divTotal.innerHTML = `<span class='pdv-touch-total-label'>Total:</span> <span class='pdv-touch-total-value'>R$ ${total.toFixed(2)}</span>`;
+}
+
+function alterarQtd(idx, delta) {
+    if (!carrinho[idx]) return;
+    carrinho[idx].qtd += delta;
+    if (carrinho[idx].qtd <= 0) carrinho.splice(idx, 1);
+    renderCarrinho();
+}
+
+function removerItem(idx) {
+    carrinho.splice(idx, 1);
+    renderCarrinho();
+}
+
+// Event Listeners
+inputBusca.addEventListener('input', function() {
+    filtroTexto = this.value.trim();
+    renderProdutos();
+});
+
+inputComanda.addEventListener('change', function() {
+    const comandaId = parseInt(this.value, 10);
+    carregarComanda(comandaId);
+});
+
+document.querySelectorAll('.filtro-categoria-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelector('.filtro-categoria-btn.active').classList.remove('active');
+        this.classList.add('active');
+        const categoriaId = this.getAttribute('data-id');
+        fetchAndRenderProdutos(categoriaId);
+    });
+});
+
+listaCarrinho.addEventListener('click', function(e) {
+    const target = e.target.closest('button');
+    if (!target) return;
+
+    const idx = parseInt(target.dataset.idx);
+    if (target.classList.contains('pdv-touch-btn-qtd')) {
+        const delta = parseInt(target.dataset.delta);
+        alterarQtd(idx, delta);
+    } else if (target.classList.contains('pdv-touch-btn-remove')) {
+        removerItem(idx);
+    }
+});
+
+btnFinalizar.onclick = async function() {
+    feedbackDiv.textContent = '';
+    feedbackDiv.className = '';
+
+    if (carrinho.length === 0) {
+        feedbackDiv.className = 'error pdv-feedback-anim';
+        feedbackDiv.textContent = 'Adicione produtos ao carrinho!';
+        return;
+    }
+
+    const formaPagamento = document.getElementById('forma-pagamento').value;
+    if (!formaPagamento) {
+        feedbackDiv.className = 'error pdv-feedback-anim';
+        feedbackDiv.textContent = 'Selecione a forma de pagamento!';
+        return;
+    }
+
+    const comandaId = document.getElementById('numero-comanda').value;
+    const itensValidos = carrinho.every(item => item.id && item.qtd && item.preco !== undefined);
+    if (!itensValidos) {
+        feedbackDiv.className = 'error pdv-feedback-anim';
+        feedbackDiv.textContent = 'Carrinho inválido. Tente novamente.';
+        return;
+    }
+
+    // Lógica para enviar para comanda ou venda direta
+    if (comandaId && !isNaN(comandaId) && parseInt(comandaId) > 0) {
+        let ok = true;
+        for (const item of carrinho) {
+            const form = new FormData();
+            form.append('produto_id', item.id);
+            form.append('quantidade', item.qtd);
+            try {
+                const resp = await fetch(`/api/comandas/${comandaId}/item`, {method: 'POST', body: form});
+                if (!resp.ok) ok = false;
+            } catch (e) { ok = false; }
+        }
+        if (ok) {
+            feedbackDiv.className = 'success pdv-feedback-anim';
+            feedbackDiv.textContent = 'Itens adicionados à comanda!';
+            carrinho.length = 0;
+            renderCarrinho();
+        } else {
+            feedbackDiv.className = 'error pdv-feedback-anim';
+            feedbackDiv.textContent = 'Erro ao adicionar à comanda. Verifique o número.';
+        }
+        return;
+    }
+
+    // Venda direta
+    try {
+        const resp = await fetch('/api/pdv/venda', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itens: carrinho, pagamento: formaPagamento })
+        });
+        if (resp.ok) {
+            feedbackDiv.className = 'success pdv-feedback-anim';
+            feedbackDiv.textContent = 'Venda finalizada com sucesso!';
+            carrinho.length = 0;
+            renderCarrinho();
+            setTimeout(() => { feedbackDiv.textContent = ''; }, 3000);
+        } else {
+            const data = await resp.json().catch(() => ({}));
+            feedbackDiv.className = 'error pdv-feedback-anim';
+            feedbackDiv.textContent = data.error || 'Erro ao finalizar venda.';
+        }
+    } catch (e) {
+        feedbackDiv.className = 'error pdv-feedback-anim';
+        feedbackDiv.textContent = 'Erro de conexão ao finalizar venda.';
+    }
+};
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    fetchAndRenderProdutos('all'); // Carga inicial de todos os produtos
+    renderCarrinho();
+    atualizaRelogio();
+});
+</script>
+<style>
+/* Layout Geral */
+.pdv-touch-wrapper { min-height: 100vh; background: #f6f7fb; display: flex; flex-direction: column; }
+.pdv-touch-header { display: flex; justify-content: space-between; align-items: center; background: #fff; box-shadow: 0 2px 12px #0001; padding: 18px 32px; border-radius: 0 0 18px 18px; }
+.pdv-touch-title { display: flex; align-items: center; gap: 12px; font-size: 2.1em; color: #667eea; font-weight: 700; }
+.pdv-touch-logo { font-size: 1.3em; }
+.pdv-touch-info { display: flex; gap: 18px; align-items: center; font-size: 1.1em; color: #888; }
+.pdv-touch-main { display: flex; gap: 32px; flex: 1; padding: 32px 4vw; overflow: hidden; }
+
+/* Seção de Produtos */
+.pdv-touch-produtos { flex: 2; display: flex; flex-direction: column; }
+.pdv-touch-produtos-header { margin-bottom: 12px; }
+#busca-produto { width: 100%; padding: 14px; border-radius: 10px; border: 1.5px solid #ddd; font-size: 1.1em; }
+#busca-produto:focus { border-color: #667eea; box-shadow: 0 0 0 3px #667eea22; outline: none; }
+
+/* Filtro de Categorias */
+.pdv-touch-categorias-filtro { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.filtro-categoria-btn { background: #fff; border: 1.5px solid #ddd; color: #555; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+.filtro-categoria-btn:hover { background: #eef; border-color: #667eea; }
+.filtro-categoria-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+
+/* Grid de Produtos */
+.pdv-touch-produtos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 22px; overflow-y: auto; padding: 5px; }
+.pdv-touch-produto-card { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px #667eea22; padding: 22px 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; transition: all 0.2s; }
+.pdv-touch-produto-card:hover { box-shadow: 0 6px 24px #ff6b3533; transform: translateY(-2px) scale(1.03); }
+.pdv-touch-produto-nome { font-size: 1.1em; font-weight: 600; color: #333; text-align: center; }
+.pdv-touch-produto-preco { color: #ff6b35; font-size: 1.1em; font-weight: 700; }
+.pdv-touch-btn-add { background: linear-gradient(90deg,#667eea 60%,#ff6b35 100%); color: #fff; border: none; border-radius: 8px; font-size: 1em; font-weight: 600; padding: 10px 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+.pdv-touch-btn-add:hover { background: linear-gradient(90deg,#5a67d8 60%,#ff7f50 100%); transform: scale(1.08); }
+
+/* Carrinho */
+.pdv-touch-carrinho { flex: 1; background: #fff; border-radius: 18px; box-shadow: 0 2px 12px #667eea22; display: flex; flex-direction: column; min-width: 340px; max-width: 420px; max-height: calc(100vh - 150px); }
+.pdv-touch-carrinho-header { padding: 24px 18px 12px; }
+.pdv-touch-carrinho-title { font-size: 1.3em; font-weight: 700; color: #667eea; margin-bottom: 12px; display: block; }
+.pdv-touch-carrinho-lista { list-style: none; padding: 0 18px; margin: 0; flex: 1; overflow-y: auto; }
+.pdv-touch-carrinho-footer { padding: 12px 18px 24px; border-top: 1px solid #eee; }
+
+/* Itens do Carrinho */
+.pdv-touch-carrinho-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f6f7fb; border-radius: 10px; padding: 10px 8px; margin-bottom: 10px; }
+.pdv-touch-carrinho-nome { flex: 2; font-weight: 600; color: #333; font-size: 0.95em; }
+.pdv-touch-carrinho-qtd { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pdv-touch-btn-qtd { background: #eee; border: none; border-radius: 6px; font-weight: bold; color: #667eea; width: 28px; height: 28px; cursor: pointer; transition: all 0.15s; }
+.pdv-touch-btn-qtd:hover { background: #ff6b3533; transform: scale(1.12); }
+.pdv-touch-carrinho-preco { flex: 1; color: #ff6b35; font-weight: 700; text-align: right; }
+.pdv-touch-btn-remove { background: none; border: none; color: #dc3545; font-size: 1.2em; cursor: pointer; transition: transform 0.15s; }
+.pdv-touch-btn-remove:hover { transform: scale(1.2); }
+
+/* Total e Finalizar */
+.pdv-touch-total { margin-bottom: 16px; font-weight: 700; font-size: 1.15em; color: #333; text-align: right; }
+.pdv-touch-total-label { color: #888; font-weight: 500; }
+.pdv-touch-total-value { color: #ff6b35; font-size: 1.25em; font-weight: 700; margin-left: 8px; }
+.pdv-touch-btn-finalizar { background: linear-gradient(90deg,#667eea 60%,#ff6b35 100%); width: 100%; color: #fff; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 700; padding: 16px 0; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px #0001; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; justify-content: center; }
+.pdv-touch-btn-finalizar:hover { background: linear-gradient(90deg,#5a67d8 60%,#ff7f50 100%); transform: scale(1.04); }
+.pdv-touch-btn-finalizar:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+/* Formulário */
+.form-group { margin-bottom: 10px; }
+.form-group label, .form-group-pagamento label { display: block; font-weight: 600; color: #555; margin-bottom: 5px; font-size: 0.9em; }
+#numero-comanda, #forma-pagamento { width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 1em; }
+.form-group-pagamento { margin-bottom: 16px; }
+
+/* Feedback e Vazio */
+#pdv-feedback { text-align: center; padding: 12px; margin-top: 12px; border-radius: 10px; font-weight: 600; animation: pdv-feedback-pop 0.3s; }
+#pdv-feedback.success { background: #d4edda; color: #155724; }
+#pdv-feedback.error { background: #ffebee; color: #c62828; }
+@keyframes pdv-feedback-pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.pdv-touch-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #aaa; font-size: 1.1em; justify-content: center; flex: 1; text-align: center; }
+.pdv-touch-empty-icon { font-size: 2.5em; margin-bottom: 4px; }
+
+/* Feedback de Carregamento e Erro */
+.pdv-loading, .pdv-error {
+    grid-column: 1 / -1; /* Ocupa toda a largura do grid */
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2em;
+    color: #888;
+    font-weight: 600;
+}
+.pdv-error {
+    color: #c62828;
+    background: #ffebee;
+    border-radius: 12px;
+}
+
+
+/* Responsividade */
+@media (max-width: 900px) { 
+    .pdv-touch-main { flex-direction: column; gap: 18px; padding: 12px 2vw; max-height: none; } 
+    .pdv-touch-carrinho { max-width: 100%; min-width: 0; max-height: 50vh; } 
+    .pdv-touch-header { flex-direction: column; gap: 10px; padding: 12px 2vw; } 
+}
+</style>
+{% endblock %}

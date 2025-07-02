@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+{% block title %}Comandas Abertas - STOC{% endblock %}
+{% block content %}
+<div class="main-card">
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:32px;">
+        <div style="text-align:center;">
+            <h1 style="color:#ff6b35;margin:0;font-size:2.2rem;font-weight:700;">📋 Visualizar Comandas</h1>
+            <p style="color:#666;margin:8px 0 0 0;font-size:1rem;">Visualize todas as comandas do sistema</p>
+        </div>
+    </div>
+
+    {% if comandas|length == 0 %}
+    <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>Nenhuma comanda encontrada</h3>
+        <p>Não há comandas cadastradas no sistema no momento.</p>
+    </div>
+    {% else %}
+    <div class="comandas-grid">
+        {% for c in comandas %}
+        <div class="comanda-card" data-comanda-id="{{ c.id }}">
+            <div class="card-header">
+                <div class="comanda-number">
+                    <span class="hash">#</span>{{ c.id }}
+                </div>
+                <div class="status-badge status-{{ c.status }}">
+                    {% if c.status == 'aberta' %}
+                        🔵 Aberta
+                    {% elif c.status == 'fechada' %}
+                        🟢 Fechada
+                    {% else %}
+                        ⚪ {{ c.status|title }}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">🪑 Mesa</span>
+                        <span class="value">Mesa {{ c.mesa_nome or c.mesa_id }}</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="label">👤 Garçom</span>
+                        <span class="value">{{ c.garcom_nome or ('ID: ' + c.garcom_id|string) }}</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="label">💰 Total</span>
+                        <span class="value total-value">R$ {{ '%.2f'|format(c.total or 0) }}</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="label">🕐 Abertura</span>
+                        <span class="value">{{ c.created_at.strftime('%H:%M') if c.created_at else '--:--' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="comandas-summary">
+        <div class="summary-card">
+            <div class="summary-icon">📊</div>
+            <div class="summary-content">
+                <h4>Total de Comandas</h4>
+                <span class="summary-value">{{ comandas|length }}</span>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="summary-icon">💰</div>
+            <div class="summary-content">
+                <h4>Valor Total</h4>
+                <span class="summary-value">R$ {{ '%.2f'|format(comandas|sum(attribute='total') or 0) }}</span>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="summary-icon">🔄</div>
+            <div class="summary-content">
+                <h4>Status</h4>
+                <span class="summary-value live-indicator">🟢 Ao Vivo</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b35, #ff8a5b);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+    background: linear-gradient(135deg, #e55a2b, #ff6b35);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 16px;
+    border: 2px dashed #dee2e6;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.7;
+}
+
+.empty-state h3 {
+    color: #495057;
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin: 0 0 24px 0;
+    font-size: 1rem;
+}
+
+.comandas-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+    width: 100%;
+}
+
+.comanda-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.comanda-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border-color: #ff6b35;
+}
+
+.comanda-card[data-status="aberta"] {
+    border-left: 4px solid #007bff;
+}
+
+.comanda-card[data-status="fechada"] {
+    border-left: 4px solid #28a745;
+    opacity: 0.8;
+}
+
+.card-header {
+    padding: 24px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.comanda-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333;
+    display: flex;
+    align-items: center;
+}
+
+.hash {
+    color: #ff6b35;
+    margin-right: 4px;
+}
+
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-aberta {
+    background: #cce5ff;
+    color: #0056b3;
+}
+
+.status-fechada {
+    background: #d4edda;
+    color: #155724;
+}
+
+.card-body {
+    padding: 24px;
+    flex-grow: 1;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    align-items: center;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    padding: 16px;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 12px;
+}
+
+.label {
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.value {
+    color: #333;
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+.total-value {
+    color: #28a745;
+    font-weight: 700;
+    font-size: 1.4rem;
+}
+
+.card-actions {
+    padding: 20px 24px;
+    background: #f8f9fa;
+    display: flex;
+    gap: 12px;
+    border-top: 1px solid #e9ecef;
+}
+
+.btn-view {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-view:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-1px);
+}
+
+.btn-close {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-close:hover {
+    background: linear-gradient(135deg, #1e7e34, #155724);
+    transform: translateY(-1px);
+}
+
+.btn-view-only {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    width: 100%;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.btn-view-only:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.comandas-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 2px solid #e9ecef;
+}
+
+.summary-card {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+.summary-icon {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #ff6b35, #ff8a5b);
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.summary-content h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.summary-value {
+    color: #ff6b35;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.live-indicator {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.icon {
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .comandas-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .info-item {
+        padding: 12px;
+    }
+    
+    .label {
+        font-size: 0.9rem;
+    }
+    
+    .value {
+        font-size: 1rem;
+    }
+    
+    .total-value {
+        font-size: 1.2rem;
+    }
+    
+    .comandas-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .comandas-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+    
+    .info-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .comandas-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+    
+    .info-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 32px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// WebSocket para atualizações em tempo real
+const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/comandas');
+
+ws.onmessage = function(event) {
+    if (event.data === 'update') {
+        // Efeito visual antes de recarregar
+        document.querySelectorAll('.comanda-card').forEach(card => {
+            card.style.animation = 'pulse 0.5s ease-in-out';
+        });
+        
+        setTimeout(() => {
+            location.reload();
+        }, 500);
+    }
+};
+
+ws.onopen = function() {
+    console.log('🔗 Conectado ao sistema de comandas em tempo real');
+};
+
+ws.onclose = function() {
+    console.log('❌ Conexão com sistema de comandas perdida. Tentando reconectar...');
+    // Tentar reconectar após 3 segundos
+    setTimeout(() => {
+        location.reload();
+    }, 3000);
+};
+
+// Atualizar status dos cards baseado no data-status
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.comanda-card');
+    cards.forEach(card => {
+        const statusBadge = card.querySelector('.status-badge');
+        if (statusBadge) {
+            const status = statusBadge.textContent.toLowerCase().includes('aberta') ? 'aberta' : 'fechada';
+            card.setAttribute('data-status', status);
+        }
+    });
+});
+</script>
+{% endblock %}

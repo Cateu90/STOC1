@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Categorias - STOC{% endblock %}
+{% block content %}
+<div class="main-card" style="max-width:900px;margin:40px auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.08);padding:40px;">
+    {% if error %}
+    <div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:8px; padding:16px; margin-bottom:24px;">
+        <h3 style="color:#721c24; margin:0 0 8px 0;">❌ Erro</h3>
+        <p style="margin:0; color:#721c24;">{{ error }}</p>
+    </div>
+    {% endif %}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
+        <h1 style="color:#ff6b35;font-size:2rem;font-weight:700;margin:0;">🍽️ Categorias de Produtos</h1>
+    </div>
+    <div class="table-responsive" style="overflow-x:auto;">
+    <table class="categoria-table" style="width:100%;border-collapse:collapse;margin-top:12px;background:white;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <thead>
+            <tr style="background:#ff6b35;color:white;">
+                <th style="padding:16px;text-align:left;">ID</th>
+                <th style="padding:16px;text-align:left;">Nome</th>
+                <th style="padding:16px;text-align:left;">Descrição</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in categorias %}
+        <tr style="border-bottom:1px solid #e9ecef;">
+            <td style="padding:16px;">{{ c.id }}</td>
+            <td style="padding:16px;font-weight:600;">{{ c.nome }}</td>
+            <td style="padding:16px;">
+                {% if c.nome == 'Bebida' %}
+                    🥤 Águas, refrigerantes, sucos, cervejas, vinhos, etc.
+                {% elif c.nome == 'Comida' %}
+                    🍝 Pratos principais, lanches, porções, etc.
+                {% elif c.nome == 'Sobremesa' %}
+                    🍰 Doces, sorvetes, frutas, cafés, etc.
+                {% elif c.nome == 'PDV' %}
+                    💳 Categoria especial para vendas diretas no caixa
+                {% elif c.nome == 'Outros' %}
+                    Outros produtos diversos
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+<style>
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b35, #ff8a5b);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #e55a2b, #ff6b35);
+    transform: translateY(-2px);
+}
+.categoria-table tr:hover {
+    background: #fff3e6;
+}
+@media (max-width: 700px) {
+    .main-card { padding: 16px; }
+    .categoria-table th, .categoria-table td { padding: 8px; font-size:0.95rem; }
+}
+</style>
+{% endblock %}

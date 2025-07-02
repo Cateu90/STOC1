@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Configurar Impressora PDV - STOC{% endblock %}
+{% block content %}
+<div class="main-card">
+    <h1 style="color:#ff6b35;">⚙️ Configurar Impressora do PDV</h1>
+    <p style="margin-bottom:32px; color:#666;">Configure qual impressora será usada automaticamente pelo PDV para imprimir comprovantes de venda.</p>
+    
+    {% if error %}
+    <div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:8px; padding:16px; margin-bottom:24px;">
+        <h3 style="color:#721c24; margin:0 0 8px 0;">❌ Erro</h3>
+        <p style="margin:0; color:#721c24;">{{ error }}</p>
+    </div>
+    {% endif %}
+    
+    {% if impressora_atual %}
+    <div style="background:#e8f5e8; border:1px solid #4caf50; border-radius:8px; padding:16px; margin-bottom:24px;">
+        <h3 style="color:#2e7d32; margin:0 0 8px 0;">✅ Impressora Configurada</h3>
+        <p style="margin:0; color:#2e7d32;">
+            <strong>{{ impressora_atual.nome }}</strong> ({{ impressora_atual.printer_name }})
+        </p>
+    </div>
+    {% else %}
+    <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:16px; margin-bottom:24px;">
+        <h3 style="color:#856404; margin:0 0 8px 0;">⚠️ Nenhuma Impressora Configurada</h3>
+        <p style="margin:0; color:#856404;">
+            O PDV usará a impressora padrão do sistema. Configure uma impressora específica abaixo.
+        </p>
+    </div>
+    {% endif %}
+    
+    <form method="post" style="background:#f8f9fa; padding:24px; border-radius:12px; border:1px solid #e1e5e9;">
+        <h3 style="margin:0 0 20px 0; color:#333;">Selecionar Impressora</h3>
+        
+        {% if impressoras %}
+        <div class="form-group" style="margin-bottom:24px;">
+            <label for="impressora_id" style="display:block; margin-bottom:8px; color:#333; font-weight:600;">
+                Escolha a impressora para o PDV:
+            </label>
+            <select name="impressora_id" id="impressora_id" required 
+                    style="width:100%; padding:12px; border:2px solid #e1e5e9; border-radius:8px; font-size:16px; background:white;">
+                <option value="">Selecione uma impressora...</option>
+                {% for imp in impressoras %}
+                <option value="{{ imp.id }}" {% if impressora_atual and imp.id == impressora_atual.id %}selected{% endif %}>
+                    {{ imp.nome }} ({{ imp.printer_name }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div style="display:flex; gap:12px;">
+            <button type="submit" 
+                    style="background:#ff6b35; color:#fff; border:none; padding:12px 24px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer;">
+                💾 Salvar Configuração
+            </button>
+            <a href="/dashboard" 
+               style="background:#6c757d; color:#fff; padding:12px 24px; border-radius:8px; font-size:16px; font-weight:600; text-decoration:none; display:inline-block;">
+                ← Voltar
+            </a>
+        </div>
+        {% else %}
+        <div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:8px; padding:16px;">
+            <p style="margin:0; color:#721c24;">
+                ❌ Nenhuma impressora cadastrada no sistema. 
+                <a href="/impressoras/novo" style="color:#721c24; font-weight:600;">Cadastre uma impressora primeiro</a>.
+            </p>
+        </div>
+        {% endif %}
+    </form>
+    
+    <div style="margin-top:32px; padding:20px; background:#e3f2fd; border-radius:8px; border-left:4px solid #2196f3;">
+        <h4 style="margin:0 0 12px 0; color:#1976d2;">ℹ️ Como Funciona</h4>
+        <ul style="margin:0; color:#1976d2; line-height:1.6;">
+            <li>A categoria "PDV" é criada automaticamente no sistema</li>
+            <li>Toda venda finalizada no PDV imprimirá na impressora configurada aqui</li>
+            <li>Se nenhuma impressora for configurada, usará a impressora padrão do Windows</li>
+            <li>Você pode alterar esta configuração a qualquer momento</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.form-group select:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+button:hover {
+    background: #e55a2b !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+a:hover {
+    background: #5a6268 !important;
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

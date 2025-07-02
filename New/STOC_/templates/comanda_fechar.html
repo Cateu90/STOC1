@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Fechar Comanda - STOC{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.08);padding:40px;">
+    <h1 style="color:#ff6b35;">Fechar Comanda #{{ comanda.id }}</h1>
+    <table style="width:100%;border-collapse:collapse;margin-top:24px;">
+        <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Preço Unitário</th>
+        </tr>
+        {% for item in itens %}
+        <tr>
+            <td>{{ item.produto_id }}</td>
+            <td>{{ item.quantidade }}</td>
+            <td>R$ {{ '%.2f'|format(item.preco_unitario) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <form method="post" style="margin-top:32px;">
+        <label>Pagamento</label>
+        <select name="pagamento" required>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="cartao">Cartão</option>
+            <option value="pix">Pix</option>
+        </select>
+        <button type="submit">Fechar Comanda</button>
+    </form>
+    <a href="/comandas" class="voltar" style="display:block;margin-top:18px;text-align:center;color:#666;text-decoration:none;">Voltar para comandas</a>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Erro - STOC{% endblock %}
+{% block content %}
+<div style="padding: 40px; text-align: center;">
+    <h1 style="color: #d32f2f; margin-bottom: 20px;">⚠️ Erro Interno</h1>
+    <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
+        Ocorreu um erro interno no servidor. Nossa equipe foi notificada.
+    </p>
+    
+    {% if error %}
+    <div style="background: #ffebee; border: 1px solid #ffcdd2; border-radius: 8px; padding: 20px; margin-bottom: 30px; text-align: left;">
+        <h3 style="color: #d32f2f; margin-bottom: 10px;">Detalhes do erro:</h3>
+        <code style="color: #333; background: #f5f5f5; padding: 10px; border-radius: 4px; display: block;">
+            {{ error }}
+        </code>
+    </div>
+    {% endif %}
+    
+    <div>
+        <a href="/" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-right: 10px;">
+            🏠 Voltar ao Início
+        </a>
+        <a href="javascript:history.back()" style="background: #666; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+            ← Voltar
+        </a>
+    </div>
+</div>
+{% endblock %}

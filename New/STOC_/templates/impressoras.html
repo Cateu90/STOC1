@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Impressoras - STOC{% endblock %}
+{% block content %}
+<div class="main-card impressoras-main-card impressoras-glass">
+    <div class="impressoras-header">
+        <div>
+            <h1 class="impressoras-title">🖨️ Impressoras <span class="impressoras-badge">STOC</span></h1>
+            <p class="impressoras-desc">Gerencie as impressoras do sistema</p>
+        </div>
+        <a href="/impressoras/novo" class="btn-primary impressoras-btn-nova">
+            <i class="icon">➕</i> Nova Impressora
+        </a>
+    </div>
+    {% if error %}
+    <div class="error-message impressoras-error">
+        <strong>⚠️ Erro:</strong> {{ error }}
+    </div>
+    {% endif %}
+    {% if impressoras|length == 0 %}
+    <div class="empty-state impressoras-empty">
+        <div class="empty-icon">🖨️</div>
+        <h3>Nenhuma impressora cadastrada</h3>
+        <p>Cadastre sua primeira impressora para começar a usar o sistema de impressão.</p>
+        <a href="/impressoras/novo" class="btn-primary">
+            <i class="icon">➕</i> Cadastrar Primeira Impressora
+        </a>
+    </div>
+    {% else %}
+    <div class="grid-container impressoras-grid">
+        {% for i in impressoras %}
+        <div class="impressora-card impressoras-card">
+            <div class="card-header impressoras-card-header">
+                <div class="impressora-icon">🖨️</div>
+                <div class="impressora-info">
+                    <h3>{{ i.nome }}</h3>
+                    <span class="setor-badge">{{ i.setor }}</span>
+                </div>
+            </div>
+            <div class="card-body impressoras-card-body">
+                <div class="info-row">
+                    <span class="label">ID:</span>
+                    <span class="value">#{{ i.id }}</span>
+                </div>
+                {% if i.printer_name %}
+                <div class="info-row">
+                    <span class="label">Sistema:</span>
+                    <span class="value">{{ i.printer_name }}</span>
+                </div>
+                {% endif %}
+                <div class="status-row">
+                    <span class="status-indicator active">🟢 Ativa</span>
+                </div>
+            </div>
+            <div class="card-actions impressoras-card-actions">
+                <form action="/impressoras/{{ i.id }}/excluir" method="post" onsubmit="return confirm('Tem certeza que deseja excluir a impressora {{ i.nome }}?');">
+                    <button type="submit" class="btn-excluir impressoras-btn-excluir">
+                        <i class="icon">🗑️</i> Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+<style>
+.impressoras-main-card { max-width: 1100px; background: rgba(255,255,255,0.92); border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.10); padding: 36px 32px; margin: 32px auto; }
+.impressoras-glass { backdrop-filter: blur(6px); }
+.impressoras-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.impressoras-title { color: #ff6b35; margin: 0; font-size: 2.2rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.impressoras-badge { background: #667eea; color: #fff; font-size: 0.7em; border-radius: 8px; padding: 2px 10px; margin-left: 10px; letter-spacing: 1px; }
+.impressoras-desc { color: #666; margin: 8px 0 0 0; font-size: 1rem; }
+.impressoras-btn-nova { font-size: 1.05rem; }
+.impressoras-error { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+.impressoras-empty { background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 16px; border: 2px dashed #dee2e6; }
+.impressoras-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px; }
+.impressoras-card { border-radius: 18px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e9ecef; transition: all 0.3s ease; background: #fff; }
+.impressoras-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); border-color: #ff6b35; }
+.impressoras-card-header { padding: 20px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); display: flex; align-items: center; gap: 16px; }
+.impressora-icon { font-size: 2.5rem; background: linear-gradient(135deg, #ff6b35, #ff8a5b); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3); }
+.impressora-info h3 { margin: 0 0 8px 0; color: #333; font-size: 1.4rem; font-weight: 700; }
+.setor-badge { background: linear-gradient(135deg, #28a745, #34ce57); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+.impressoras-card-body { padding: 20px; }
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.info-row:last-child { border-bottom: none; }
+.label { color: #6c757d; font-weight: 600; font-size: 0.9rem; }
+.value { color: #333; font-weight: 500; font-family: 'Consolas', monospace; }
+.status-row { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+.status-indicator { background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.impressoras-card-actions { padding: 16px 20px; background: #f8f9fa; display: flex; gap: 12px; border-top: 1px solid #e9ecef; }
+.btn-excluir { background: linear-gradient(135deg, #dc3545, #c82333); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.3s ease; flex: 1; }
+.btn-excluir:hover { background: linear-gradient(135deg, #c82333, #bd2130); transform: translateY(-1px); }
+.icon { font-size: 0.9rem; }
+@media (max-width: 900px) { .impressoras-main-card { padding: 8px 2vw; } .impressoras-header { flex-direction: column; gap: 10px; align-items: flex-start; } .impressoras-grid { grid-template-columns: 1fr; } .impressoras-card-actions { flex-direction: column; } .btn-excluir { justify-content: center; } }
+</style>
+<script>
+function editarImpressora(id) {
+    alert('🚧 Funcionalidade de edição será implementada em breve!\n\nPor enquanto, você pode excluir e cadastrar novamente.');
+}
+</script>
+{% endblock %}

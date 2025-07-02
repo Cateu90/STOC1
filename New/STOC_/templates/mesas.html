@@ -1,0 +1,1275 @@
+{% extends "base.html" %}
+
+{% block title %}Mesas - STOC{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header com estatísticas -->
+    <div class="header-section">
+        <div class="title-area">
+            <h1 class="page-title">🪑 Gerenciamento de Mesas</h1>
+            <p class="page-subtitle">Controle e monitore todas as mesas do estabelecimento</p>
+        </div>
+        <div class="header-actions">
+            <a href="/mesas/nova" class="btn btn-primary">
+                <span>➕</span> Nova Mesa
+            </a>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    {% if mesas %}
+    <div class="stats-grid">
+        <div class="stat-card stat-total">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ mesas|length }}</div>
+                <div class="stat-label">Total de Mesas</div>
+            </div>
+        </div>
+        <div class="stat-card stat-available">
+            <div class="stat-icon">🟢</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ mesas|selectattr("status", "equalto", "disponivel")|list|length }}</div>
+                <div class="stat-label">Disponíveis</div>
+            </div>
+        </div>
+        <div class="stat-card stat-occupied">
+            <div class="stat-icon">🔴</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ mesas|selectattr("status", "equalto", "ocupada")|list|length }}</div>
+                <div class="stat-label">Ocupadas</div>
+            </div>
+        </div>
+        <div class="stat-card stat-reserved">
+            <div class="stat-icon">🟡</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ mesas|selectattr("status", "equalto", "reservada")|list|length }}</div>
+                <div class="stat-label">Reservadas</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Alertas -->
+    {% if success %}
+    <div class="alert alert-success">
+        <div class="alert-icon">✅</div>
+        <div class="alert-content">Mesa cadastrada com sucesso!</div>
+    </div>
+    {% endif %}
+
+    {% if deleted %}
+    <div class="alert alert-success">
+        <div class="alert-icon">✅</div>
+        <div class="alert-content">Mesa excluída com sucesso!</div>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <div class="alert-icon">❌</div>
+        <div class="alert-content">{{ error }}</div>
+    </div>
+    {% endif %}
+
+    {% if mesas %}
+    <!-- Controles -->
+    <div class="controls-section">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar mesa..." class="search-input">
+        </div>
+        <div class="filters">
+            <select id="statusFilter" class="filter-select">
+                <option value="">Todos os status</option>
+                <option value="disponivel">🟢 Disponível</option>
+                <option value="ocupada">🔴 Ocupada</option>
+                <option value="reservada">🟡 Reservada</option>
+            </select>
+        </div>
+        <div class="view-toggle">
+            <button id="tableView" class="view-btn active" title="Visualização em Tabela">
+                📋
+            </button>
+            <button id="cardView" class="view-btn" title="Visualização em Cards">
+                🎴
+            </button>
+        </div>
+    </div>
+
+    <!-- Visualização em Tabela -->
+    <div id="tableViewContainer" class="content-card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Status</th>
+                        <th>Ações Rápidas</th>
+                        <th>Gerenciar</th>
+                    </tr>
+                </thead>
+                <tbody id="mesasTableBody">
+                    {% for mesa in mesas %}
+                    <tr class="mesa-row" data-status="{{ mesa.status }}" data-nome="{{ mesa.nome|lower }}">
+                        <td>
+                            <span class="mesa-id">#{{ mesa.id }}</span>
+                        </td>
+                        <td>
+                            <div class="mesa-name">
+                                <strong>{{ mesa.nome }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ mesa.status }}" id="status-{{ mesa.id }}">
+                                {% if mesa.status == 'disponivel' %}
+                                    <span class="status-dot status-dot-available"></span> Disponível
+                                {% elif mesa.status == 'ocupada' %}
+                                    <span class="status-dot status-dot-occupied"></span> Ocupada
+                                {% elif mesa.status == 'reservada' %}
+                                    <span class="status-dot status-dot-reserved"></span> Reservada
+                                {% else %}
+                                    <span class="status-dot"></span> {{ mesa.status }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="quick-actions">
+                                {% if mesa.status == 'disponivel' %}
+                                <button onclick="changeStatus({{ mesa.id }}, 'ocupada')" class="btn-quick btn-quick-occupy" title="Marcar como Ocupada">
+                                    🔴
+                                </button>
+                                <button onclick="changeStatus({{ mesa.id }}, 'reservada')" class="btn-quick btn-quick-reserve" title="Reservar Mesa">
+                                    🟡
+                                </button>
+                                {% elif mesa.status == 'ocupada' %}
+                                <button onclick="changeStatus({{ mesa.id }}, 'disponivel')" class="btn-quick btn-quick-free" title="Liberar Mesa">
+                                    🟢
+                                </button>
+                                {% elif mesa.status == 'reservada' %}
+                                <button onclick="changeStatus({{ mesa.id }}, 'ocupada')" class="btn-quick btn-quick-occupy" title="Marcar como Ocupada">
+                                    🔴
+                                </button>
+                                <button onclick="changeStatus({{ mesa.id }}, 'disponivel')" class="btn-quick btn-quick-free" title="Cancelar Reserva">
+                                    🟢
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="actions">
+                            <a href="/mesas/{{ mesa.id }}/editar" class="btn btn-sm btn-secondary" title="Editar Mesa">
+                                ✏️ Editar
+                            </a>
+                            <button onclick="deleteMesa({{ mesa.id }}, '{{ mesa.nome }}')" class="btn btn-sm btn-danger" title="Excluir Mesa">
+                                🗑️ Excluir
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Visualização em Cards -->
+    <div id="cardViewContainer" class="cards-grid" style="display: none;">
+        {% for mesa in mesas %}
+        <div class="mesa-card" data-status="{{ mesa.status }}" data-nome="{{ mesa.nome|lower }}">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="mesa-number">#{{ mesa.id }}</span>
+                    <h3>{{ mesa.nome }}</h3>
+                </div>
+                <div class="card-status">
+                    <span class="status-badge status-{{ mesa.status }}">
+                        {% if mesa.status == 'disponivel' %}
+                            <span class="status-dot status-dot-available"></span> Disponível
+                        {% elif mesa.status == 'ocupada' %}
+                            <span class="status-dot status-dot-occupied"></span> Ocupada
+                        {% elif mesa.status == 'reservada' %}
+                            <span class="status-dot status-dot-reserved"></span> Reservada
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-actions">
+                <div class="quick-status-actions">
+                    {% if mesa.status == 'disponivel' %}
+                    <button onclick="changeStatus({{ mesa.id }}, 'ocupada')" class="btn-status btn-occupy">
+                        🔴 Ocupar
+                    </button>
+                    <button onclick="changeStatus({{ mesa.id }}, 'reservada')" class="btn-status btn-reserve">
+                        🟡 Reservar
+                    </button>
+                    {% elif mesa.status == 'ocupada' %}
+                    <button onclick="changeStatus({{ mesa.id }}, 'disponivel')" class="btn-status btn-free">
+                        🟢 Liberar
+                    </button>
+                    {% elif mesa.status == 'reservada' %}
+                    <button onclick="changeStatus({{ mesa.id }}, 'ocupada')" class="btn-status btn-occupy">
+                        🔴 Ocupar
+                    </button>
+                    <button onclick="changeStatus({{ mesa.id }}, 'disponivel')" class="btn-status btn-free">
+                        🟢 Cancelar
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div class="management-actions">
+                    <a href="/mesas/{{ mesa.id }}/editar" class="btn-manage btn-edit">
+                        ✏️ Editar
+                    </a>
+                    <button onclick="deleteMesa({{ mesa.id }}, '{{ mesa.nome }}')" class="btn-manage btn-delete">
+                        🗑️ Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Estado vazio -->
+    <div class="content-card">
+        <div class="empty-state">
+            <div class="empty-illustration">
+                <div class="empty-icon">🪑</div>
+                <div class="empty-lines">
+                    <div class="empty-line"></div>
+                    <div class="empty-line short"></div>
+                </div>
+            </div>
+            <h3>Nenhuma mesa cadastrada</h3>
+            <p>Comece criando suas primeiras mesas para organizar o atendimento do seu estabelecimento</p>
+            <a href="/mesas/nova" class="btn btn-primary btn-large">
+                <span>➕</span> Cadastrar Primeira Mesa
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Confirmação -->
+<div id="confirmModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Confirmar Ação</h3>
+        </div>
+        <div class="modal-body">
+            <p id="modalMessage"></p>
+        </div>
+        <div class="modal-footer">
+            <button id="modalCancel" class="btn btn-secondary">Cancelar</button>
+            <button id="modalConfirm" class="btn btn-danger">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos base */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Header */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin: 40px 0 40px 0;
+    padding: 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.title-area {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.page-title {
+    font-size: 36px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 12px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 18px;
+    margin: 0;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.header-actions .btn-primary {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    font-weight: 700;
+    padding: 16px 24px;
+    font-size: 16px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions .btn-primary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Estatísticas */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    font-size: 32px;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-total .stat-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.stat-available .stat-icon { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); }
+.stat-occupied .stat-icon { background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); }
+.stat-reserved .stat-icon { background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); }
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a202c;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #718096;
+    font-weight: 500;
+}
+
+/* Botões */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-secondary:hover {
+    background: #edf2f7;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(245, 101, 101, 0.3);
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+.btn-large {
+    padding: 16px 32px;
+    font-size: 16px;
+}
+
+/* Alertas */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border-left: 4px solid;
+    animation: slideInDown 0.3s ease;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    color: #22543d;
+    border-color: #38a169;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+    color: #c53030;
+    border-color: #e53e3e;
+}
+
+.alert-icon {
+    font-size: 18px;
+}
+
+/* Controles */
+.controls-section {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-select {
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 4px;
+    background: #f7fafc;
+    padding: 4px;
+    border-radius: 10px;
+}
+
+.view-btn {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.view-btn.active,
+.view-btn:hover {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Tabela */
+.content-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    padding: 18px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #2d3748;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 14px;
+}
+
+.data-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.mesa-row:hover {
+    background: #f8fafc;
+}
+
+.mesa-id {
+    font-weight: 700;
+    color: #667eea;
+    font-size: 14px;
+}
+
+.mesa-name strong {
+    color: #1a202c;
+    font-size: 15px;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid;
+}
+
+.status-disponivel {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    color: #22543d;
+    border-color: #9ae6b4;
+}
+
+.status-ocupada {
+    background: linear-gradient(135deg, #fed7d7 0%, #fbb6ce 100%);
+    color: #c53030;
+    border-color: #f687b3;
+}
+
+.status-reservada {
+    background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
+    color: #744210;
+    border-color: #f6e05e;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.status-dot-available { background: #48bb78; }
+.status-dot-occupied { background: #f56565; }
+.status-dot-reserved { background: #ed8936; }
+
+/* Ações rápidas */
+.quick-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-quick {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-quick-occupy {
+    background: #fed7d7;
+    color: #c53030;
+}
+
+.btn-quick-occupy:hover {
+    background: #f56565;
+    color: white;
+    transform: scale(1.1);
+}
+
+.btn-quick-reserve {
+    background: #fefcbf;
+    color: #744210;
+}
+
+.btn-quick-reserve:hover {
+    background: #ed8936;
+    color: white;
+    transform: scale(1.1);
+}
+
+.btn-quick-free {
+    background: #f0fff4;
+    color: #22543d;
+}
+
+.btn-quick-free:hover {
+    background: #48bb78;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Cards Grid */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.mesa-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.mesa-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    padding: 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.card-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mesa-number {
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    align-self: flex-start;
+}
+
+.card-title h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.card-actions {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quick-status-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-status {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-occupy {
+    background: linear-gradient(135deg, #fed7d7 0%, #fbb6ce 100%);
+    color: #c53030;
+}
+
+.btn-occupy:hover {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-reserve {
+    background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
+    color: #744210;
+}
+
+.btn-reserve:hover {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-free {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    color: #22543d;
+}
+
+.btn-free:hover {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.management-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-manage {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    text-align: center;
+}
+
+.btn-edit {
+    background: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-edit:hover {
+    background: #edf2f7;
+    transform: translateY(-1px);
+}
+
+.btn-delete {
+    background: #fed7d7;
+    color: #c53030;
+    border: 1px solid #feb2b2;
+}
+
+.btn-delete:hover {
+    background: #f56565;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Estado vazio */
+.empty-state {
+    text-align: center;
+    padding: 80px 24px;
+}
+
+.empty-illustration {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.empty-icon {
+    font-size: 80px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+    filter: grayscale(20%);
+}
+
+.empty-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.empty-line {
+    height: 4px;
+    background: linear-gradient(90deg, #e2e8f0 0%, #cbd5e0 50%, #e2e8f0 100%);
+    border-radius: 2px;
+    width: 200px;
+}
+
+.empty-line.short {
+    width: 120px;
+}
+
+.empty-state h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    color: #718096;
+    margin-bottom: 32px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.modal-header {
+    padding: 24px 24px 0 24px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.modal-body {
+    padding: 16px 24px;
+}
+
+.modal-body p {
+    margin: 0;
+    color: #4a5568;
+    line-height: 1.6;
+}
+
+.modal-footer {
+    padding: 0 24px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Animações */
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .header-section {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 24px 20px;
+        margin: 20px 0 32px 0;
+    }
+    
+    .page-title {
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+    
+    .page-subtitle {
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .header-actions .btn-primary {
+        padding: 14px 32px;
+        font-size: 15px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .controls-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        min-width: unset;
+    }
+    
+    .view-toggle {
+        align-self: center;
+    }
+    
+    .actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .quick-status-actions,
+    .management-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 16px;
+    }
+    
+    .page-title {
+        font-size: 24px;
+    }
+    
+    .page-subtitle {
+        font-size: 14px;
+    }
+    
+    .header-section {
+        margin: 16px 0 24px 0;
+        padding: 20px 16px;
+    }
+    
+    .stat-card {
+        padding: 16px;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+    }
+    
+    .header-actions .btn-primary {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+}
+</style>
+
+<script>
+// Funcionalidades JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const tableView = document.getElementById('tableView');
+    const cardView = document.getElementById('cardView');
+    const tableViewContainer = document.getElementById('tableViewContainer');
+    const cardViewContainer = document.getElementById('cardViewContainer');
+    const confirmModal = document.getElementById('confirmModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalConfirm = document.getElementById('modalConfirm');
+
+    // Variáveis de controle
+    let currentAction = null;
+
+    // Filtros
+    function filterMesas() {
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        const statusValue = statusFilter ? statusFilter.value : '';
+        
+        // Filtrar linhas da tabela
+        const tableRows = document.querySelectorAll('.mesa-row');
+        tableRows.forEach(row => {
+            const nome = row.dataset.nome || '';
+            const status = row.dataset.status || '';
+            
+            const matchesSearch = nome.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+        
+        // Filtrar cards
+        const cards = document.querySelectorAll('.mesa-card');
+        cards.forEach(card => {
+            const nome = card.dataset.nome || '';
+            const status = card.dataset.status || '';
+            
+            const matchesSearch = nome.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            
+            card.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    // Event listeners para filtros
+    if (searchInput) {
+        searchInput.addEventListener('input', filterMesas);
+    }
+    
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterMesas);
+    }
+
+    // Alternância de visualização
+    if (tableView && cardView) {
+        tableView.addEventListener('click', function() {
+            tableView.classList.add('active');
+            cardView.classList.remove('active');
+            if (tableViewContainer) tableViewContainer.style.display = 'block';
+            if (cardViewContainer) cardViewContainer.style.display = 'none';
+        });
+
+        cardView.addEventListener('click', function() {
+            cardView.classList.add('active');
+            tableView.classList.remove('active');
+            if (tableViewContainer) tableViewContainer.style.display = 'none';
+            if (cardViewContainer) cardViewContainer.style.display = 'grid';
+        });
+    }
+
+    // Modal
+    function showModal(title, message, confirmCallback) {
+        if (confirmModal) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            confirmModal.style.display = 'flex';
+            currentAction = confirmCallback;
+        }
+    }
+
+    function hideModal() {
+        if (confirmModal) {
+            confirmModal.style.display = 'none';
+            currentAction = null;
+        }
+    }
+
+    if (modalCancel) {
+        modalCancel.addEventListener('click', hideModal);
+    }
+
+    if (modalConfirm) {
+        modalConfirm.addEventListener('click', function() {
+            if (currentAction) {
+                currentAction();
+            }
+            hideModal();
+        });
+    }
+
+    // Fechar modal clicando fora
+    if (confirmModal) {
+        confirmModal.addEventListener('click', function(e) {
+            if (e.target === confirmModal) {
+                hideModal();
+            }
+        });
+    }
+
+    // Funções globais
+    window.changeStatus = function(mesaId, newStatus) {
+        const statusNames = {
+            'disponivel': 'Disponível',
+            'ocupada': 'Ocupada',
+            'reservada': 'Reservada'
+        };
+
+        const actionNames = {
+            'disponivel': 'liberar',
+            'ocupada': 'ocupar',
+            'reservada': 'reservar'
+        };
+
+        showModal(
+            'Confirmar Mudança de Status',
+            `Tem certeza que deseja ${actionNames[newStatus]} esta mesa?`,
+            function() {
+                // Aqui você faria a requisição AJAX para o backend
+                // Por enquanto, vamos simular a mudança
+                fetch(`/mesas/${mesaId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Recarregar a página para mostrar as mudanças
+                        window.location.reload();
+                    } else {
+                        alert('Erro ao alterar status da mesa');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao alterar status da mesa');
+                });
+            }
+        );
+    };
+
+    window.deleteMesa = function(mesaId, mesaNome) {
+        showModal(
+            'Confirmar Exclusão',
+            `Tem certeza que deseja excluir a mesa "${mesaNome}"? Esta ação não pode ser desfeita.`,
+            function() {
+                // Criar e submeter um formulário para exclusão
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/mesas/${mesaId}/excluir`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        );
+    };
+
+    // Auto-refresh das estatísticas (opcional)
+    setInterval(function() {
+        // Aqui você poderia fazer uma requisição AJAX para atualizar as estatísticas
+        // sem recarregar a página inteira
+    }, 30000); // A cada 30 segundos
+});
+</script>
+{% endblock %}

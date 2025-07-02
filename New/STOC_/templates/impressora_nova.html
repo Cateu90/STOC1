@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Nova Impressora - STOC{% endblock %}
+{% block content %}
+<div class="main-card">
+    <h1 style="color:#ff6b35;">Nova Impressora</h1>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+        <label>Nome</label>
+        <input type="text" name="nome" required>
+        <label>Setor</label>
+        <input type="text" name="setor" required>
+        <label>Impressora física</label>
+        <select name="printer_name" required>
+            {% for printer in printers %}
+            <option value="{{ printer }}">{{ printer }}</option>
+            {% endfor %}
+        </select>
+        <label>Categorias que esta impressora imprime</label>
+        <div style="margin-bottom:12px;">
+            {% for cat in categorias %}
+            <label style="display:block;margin-bottom:4px;">
+                <input type="checkbox" name="categorias" value="{{ cat.id }}"> {{ cat.nome }}
+            </label>
+            {% endfor %}
+        </div>
+        <button type="submit">Salvar</button>
+    </form>
+    <button type="button" onclick="location.href='/impressoras'" class="voltar" style="display:block;margin-top:18px;text-align:center;color:#666;text-decoration:none;background:none;border:none;">Voltar para lista de impressoras</button>
+</div>
+{% endblock %}
